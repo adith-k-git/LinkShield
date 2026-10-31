@@ -108,7 +108,7 @@ Install the following before running the project:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/LinkShield.git
+git clone git remote add origin https://github.com/adith-k-git/LinkShield.git
 ```
 
 ```bash
