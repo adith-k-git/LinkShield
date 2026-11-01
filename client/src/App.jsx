@@ -9,10 +9,11 @@ import {
   Info,
   History,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import "./App.css";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api`;
 
 function App() {
   const [url, setUrl] = useState("");
@@ -22,6 +23,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
+  const [clearingHistory, setClearingHistory] = useState(false);
 
   // Load recent scans from MongoDB
   const fetchHistory = useCallback(async () => {
@@ -43,6 +45,34 @@ function App() {
       setHistoryLoading(false);
     }
   }, []);
+
+  async function clearHistory() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete all scan history? This action cannot be undone."
+    );
+
+    if (!confirmed || clearingHistory) return;
+
+    setClearingHistory(true);
+    setHistoryError("");
+
+    try {
+      const response = await fetch(`${API_BASE}/scans`, { method: "DELETE" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to clear scan history.");
+      }
+
+      setHistory([]);
+    } catch (error) {
+      setHistoryError(
+        error.message || "Could not connect to LinkShield to clear history."
+      );
+    } finally {
+      setClearingHistory(false);
+    }
+  }
 
   // Load history when dashboard opens
   useEffect(() => {
@@ -396,29 +426,46 @@ function App() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="refresh-button"
-            onClick={fetchHistory}
-            disabled={historyLoading}
-          >
-            <RefreshCw
-              size={16}
-              className={historyLoading ? "spinner" : ""}
-            />
-            Refresh
-          </button>
+          <div className="history-actions">
+            <button
+              type="button"
+              className="refresh-button"
+              onClick={fetchHistory}
+              disabled={historyLoading || clearingHistory}
+            >
+              <RefreshCw
+                size={16}
+                className={historyLoading ? "spinner" : ""}
+              />
+              Refresh
+            </button>
+            <button
+              type="button"
+              className="clear-history-button"
+              onClick={clearHistory}
+              disabled={clearingHistory || historyLoading || history.length === 0}
+            >
+              {clearingHistory ? (
+                <LoaderCircle size={16} className="spinner" />
+              ) : (
+                <Trash2 size={16} />
+              )}
+              {clearingHistory ? "Clearing…" : "Clear History"}
+            </button>
+          </div>
         </div>
+
+        {historyError && (
+          <div className="history-message history-error" role="alert">
+            <AlertTriangle size={22} />
+            <p>{historyError}</p>
+          </div>
+        )}
 
         {historyLoading ? (
           <div className="history-message">
             <LoaderCircle size={22} className="spinner" />
             <p>Loading scan history...</p>
-          </div>
-        ) : historyError ? (
-          <div className="history-message history-error">
-            <AlertTriangle size={22} />
-            <p>{historyError}</p>
           </div>
         ) : history.length === 0 ? (
           <div className="history-message">

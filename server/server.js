@@ -92,6 +92,24 @@ app.get("/api/scans", async (req, res) => {
   }
 });
 
+// Delete all saved scan history
+app.delete("/api/scans", async (req, res) => {
+  try {
+    const result = await Scan.deleteMany({});
+
+    res.json({
+      message: "Scan history cleared successfully.",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Failed to clear scans:", error.message);
+
+    res.status(500).json({
+      error: "Unable to clear scan history",
+    });
+  }
+});
+
 // Start server after database connection
 const PORT = process.env.PORT || 5000;
 
@@ -99,7 +117,7 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    app.listen(PORT, () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(
         `LinkShield API running on http://localhost:${PORT}`
       );
